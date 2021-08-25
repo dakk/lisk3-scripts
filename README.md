@@ -8,3 +8,8 @@ a telegram chat for backup.
 ```
 pm2 start lisk-savestate.sh
 ```
+
+
+## lisk-nodestats.sh
+
+Send height, finalized height and countdown to new consensus to a telegram chat.
