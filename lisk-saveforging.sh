@@ -42,5 +42,5 @@ while true; do
 	
 	olda=$a
 	
-	sleep 30
+	sleep 10
 done
