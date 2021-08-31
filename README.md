@@ -6,7 +6,7 @@ It checks if the node forged a new block and then send new forging:status to
 a telegram chat for backup.
 
 ```
-pm2 start lisk-savestate.sh
+pm2 start lisk-saveforging.sh
 ```
 
 
