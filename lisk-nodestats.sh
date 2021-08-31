@@ -24,11 +24,8 @@ while true; do
 
 	height=`echo $data | jq -r '.height'`
 	finheight=`echo $data | jq -r '.finalizedHeight'`
-    timetochange=$(((16332092 - $height) * 10 / 60 / 60))
-    ttchdays=$((timetochange / 24))
-    ttchhours=$((timetochange % 24))
 
-    st="Lisk Stats - height: $height - finheight: $finheight - timetochange: $ttchdays days and $ttchhours hours" 
+    st="Lisk Stats - height: $height - finheight: $finheight" 
     echo $st
     curl -s -X POST https://api.telegram.org/bot$apiToken/sendMessage -d text="$(echo $st)" -d chat_id=$chat_id
 	
