@@ -15,24 +15,11 @@ trackedDelegates = conf['delegates']
 
 API = "https://service.lisk.io/api/v2/"
 EP = "accounts?isDelegate=true&offset=%d&limit=%d"
-BLOCKTIME = 11
 
 currentRank = {}
 trackedChanges = ['isBanned', 'rank', 'consecutiveMissedBlocks', 'voteWeight']
 # trackedDelegates = None
 
-def getCountdown():
-	data = requests.get(API + 'network/status').json()['data']
-	togo = 16332092 - int (data['height'])
-	togot = togo * BLOCKTIME / 60 / 60
-	days = int(togot / 24)
-	hours = int(togot % 24)
-
-	t = time.time() + togo * BLOCKTIME	
-	td = datetime.fromtimestamp(t)
-
-	st = "%d blocks to new consensus: %d days and %d hours [%s]" % (togo, days, hours, td)
-	return st
 
 def getRank():
 	border = None
@@ -97,12 +84,6 @@ i = 1
 print ("Started")
 	
 while True:
-	if i % 1080 == 0:
-		try:
-			appendNotify(getCountdown())
-		except:
-			print ("Failed to update countdown")
-
 	time.sleep(120)
 	try:
 		nrank, nborder = getRank()
