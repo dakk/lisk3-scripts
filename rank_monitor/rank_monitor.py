@@ -61,9 +61,9 @@ def checkChange(user, dataold, datanew, key):
 notifies = []
 
 def notify(st):
-	print (st)
+	print (st.encode('utf-8'))
 	d = requests.get ('https://api.telegram.org/bot%s/sendMessage?text=%s&chat_id=%s' % (apiToken, st, chat_id)).json()
-	print (d)
+	#print (d.encode('utf-8'))
 
 def appendNotify(s):
 	global notifies 
@@ -76,12 +76,23 @@ def flushNotify():
 		notify(st)
 		notifies = []
 
+def summary():
+	st = "Rank, Delegate, Weight\n"
+	nrank, nborder = getRank()
+	for x in nrank:
+		if x in trackedDelegates:
+			st += ("%d %s %d\n" % (nrank[x]['rank'], x, int(int(nrank[x]['voteWeight']) / 100000000)))
+	appendNotify(st)
+
 
 # notify('Starting rank monitor')
 currentRank, border = getRank()
 
 i = 1
 print ("Started")
+
+
+
 	
 while True:
 	time.sleep(120)
@@ -90,6 +101,9 @@ while True:
 	except:
 		print ("Failed to update")
 		continue
+
+	if i % 120 == 0:
+		summary()
 	
 	print('.')
 
