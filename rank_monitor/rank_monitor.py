@@ -51,7 +51,7 @@ def checkChange(user, dataold, datanew, key):
 			st = "⬆️ "
 		else:
 			st = "⬇️ "
-		st = ('%s => Changed %s to %d (was %d)' % (user, key, vnew, vold))
+		st += ('%s => Changed %s to %d (was %d, diff %d)' % (user, key, vnew, vold, vnew-vold))
 		return st
 
 	return None
