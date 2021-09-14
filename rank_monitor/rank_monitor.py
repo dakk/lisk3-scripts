@@ -42,16 +42,23 @@ def checkChange(user, dataold, datanew, key):
 	vnew = datanew[key]
 
 	if int(vold) != int(vnew):
+		st = ""
+
 		if key == 'voteWeight':
 			vold = int(int(vold) / 100000000.)
 			vnew = int(int(vnew) / 100000000.)
 
-		st = ""
-		if int(vnew) > int(vold):
-			st = "⬆️ "
-		else:
-			st = "⬇️ "
-		st += ('%s => Changed %s to %d (was %d, diff %d)' % (user, key, vnew, vold, vnew-vold))
+			if int(vnew) > int(vold):
+				st = "⬆️ "
+			else:
+				st = "⬇️ "
+		elif key == 'rank':
+			if int(vnew) > int(vold):
+				st = "🔴 "
+			else:
+				st = "🟢 "
+
+		st += ('%s => Changed %s to %d (was %d, diff %+d)' % (user, key, vnew, vold, vnew-vold))
 		return st
 
 	return None
