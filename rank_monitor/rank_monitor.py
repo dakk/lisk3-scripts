@@ -117,6 +117,9 @@ while True:
 	if nborder != None and border != None and nborder > border:
 		appendNotify(('The 101 border has increased to %d LSK (+%d)' % (nborder, nborder - border)))
 		border = nborder
+	elif nborder != None and border != None and nborder < border:
+		appendNotify(('The 101 border has decreased to %d LSK (%d)' % (nborder, nborder - border)))
+		border = nborder
 
 	if border:
 		print ('Updated %d' % (border))
