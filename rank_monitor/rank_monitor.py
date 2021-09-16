@@ -69,7 +69,6 @@ def checkChange(user, dataold, datanew, key):
 notifies = []
 
 def notify(st):
-	return 
 	print (st.encode('utf-8'))
 	d = requests.get ('https://api.telegram.org/bot%s/sendMessage?text=%s&chat_id=%s' % (apiToken, st, chat_id)).json()
 	#print (d.encode('utf-8'))
