@@ -3,7 +3,8 @@ import requests
 import time
 import json
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
+import dateutil.parser
 
 f = open('config.json', 'r')
 conf = json.loads(f.read())
@@ -68,6 +69,7 @@ def checkChange(user, dataold, datanew, key):
 notifies = []
 
 def notify(st):
+	return 
 	print (st.encode('utf-8'))
 	d = requests.get ('https://api.telegram.org/bot%s/sendMessage?text=%s&chat_id=%s' % (apiToken, st, chat_id)).json()
 	#print (d.encode('utf-8'))
@@ -91,18 +93,50 @@ def summary():
 			st += ("%d %s %d\n" % (nrank[x]['rank'], x, int(int(nrank[x]['voteWeight']) / 100000000)))
 	appendNotify(st)
 
+class BorderHistory:
+	borderHistory = []
+	lastborderHistoryDate = None
+
+	def update(self):
+
+		if self.lastborderHistoryDate == None or (datetime.now() > (self.lastborderHistoryDate + timedelta(hours=24))):
+			nrank, nborder = getRank()
+			self.lastborderHistoryDate = datetime.now()
+
+			self.borderHistory.append({
+				'd': self.lastborderHistoryDate.isoformat(),
+				'v': nborder
+			})
+
+			with open('border.json', 'w') as f:
+				f.write(json.dumps(self.borderHistory))
+
+			sc = 'Border history:\n'
+			for x in self.borderHistory:
+				sc += ("%s => %s\n" % (x['d'], x['v']))
+			appendNotify (sc)
+
+	def __init__(self):
+		try:
+			with open('border.json', 'r') as f:
+				self.borderHistory = json.loads(f.read())
+				if len(self.borderHistory) > 0:
+					self.lastborderHistoryDate = dateutil.parser.isoparse(self.borderHistory[0]['d'])
+		except Exception as e:
+			self.update()
+		
+
 
 # notify('Starting rank monitor')
 currentRank, border = getRank()
 
+borderHistory = BorderHistory()
+
 i = 1
 print ("Started")
 
-
-
 	
 while True:
-	time.sleep(120)
 	try:
 		nrank, nborder = getRank()
 	except:
@@ -111,7 +145,8 @@ while True:
 
 	if i % 120 == 0:
 		summary()
-	
+
+	borderHistory.update()
 	print('.')
 
 	if nborder != None and border != None and nborder > border:
@@ -144,5 +179,6 @@ while True:
 	i += 1
 	sys.stdout.flush()
 	flushNotify()
+	time.sleep(120)
 	
 	
