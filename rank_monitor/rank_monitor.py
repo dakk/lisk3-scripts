@@ -65,39 +65,43 @@ def checkChange(user, dataold, datanew, key):
 	return None
 
 
+class Notification:
+	notifies = []
 
-notifies = []
+	def send(self, st):
+		print (st.encode('utf-8'))
+		d = requests.get ('https://api.telegram.org/bot%s/sendMessage?text=%s&chat_id=%s' % (apiToken, st, chat_id)).json()
+		#print (d.encode('utf-8'))
 
-def notify(st):
-	print (st.encode('utf-8'))
-	d = requests.get ('https://api.telegram.org/bot%s/sendMessage?text=%s&chat_id=%s' % (apiToken, st, chat_id)).json()
-	#print (d.encode('utf-8'))
+	def append(self, s):
+		self.notifies.append(s)
 
-def appendNotify(s):
-	global notifies 
-	notifies.append(s)
+	def flush(self):
+		if len(self.notifies) > 0:
+			self.notifies.append('\n')
+			self.notifies.append(datetime.now().isoformat())
+			st = '\n'.join(self.notifies)
+			self.send(st)
+			self.notifies = []
 
-def flushNotify():
-	global notifies 
-	if len(notifies) > 0:
-		st = '\n'.join(notifies)		
-		notify(st)
-		notifies = []
-
-def summary():
-	st = "Rank, Delegate, Weight\n"
-	nrank, nborder = getRank()
-	for x in nrank:
-		if x in trackedDelegates:
-			st += ("%d %s %d\n" % (nrank[x]['rank'], x, int(int(nrank[x]['voteWeight']) / 100000000)))
-	appendNotify(st)
 
 class BorderHistory:
 	borderHistory = []
 	lastborderHistoryDate = None
+	notification = None
+
+	def __init__(self, notification):
+		self.notification = notification
+
+		try:
+			with open('border.json', 'r') as f:
+				self.borderHistory = json.loads(f.read())
+				if len(self.borderHistory) > 0:
+					self.lastborderHistoryDate = dateutil.parser.isoparse(self.borderHistory[0]['d'])
+		except Exception as e:
+			self.update()
 
 	def update(self):
-
 		if self.lastborderHistoryDate == None or (datetime.now() > (self.lastborderHistoryDate + timedelta(hours=24))):
 			nrank, nborder = getRank()
 			self.lastborderHistoryDate = datetime.now()
@@ -113,27 +117,26 @@ class BorderHistory:
 			sc = 'Border history:\n'
 			for x in self.borderHistory:
 				sc += ("%s => %s\n" % (x['d'], x['v']))
-			appendNotify (sc)
-
-	def __init__(self):
-		try:
-			with open('border.json', 'r') as f:
-				self.borderHistory = json.loads(f.read())
-				if len(self.borderHistory) > 0:
-					self.lastborderHistoryDate = dateutil.parser.isoparse(self.borderHistory[0]['d'])
-		except Exception as e:
-			self.update()
+			self.notification.append (sc)
 		
 
+notification = Notification()
+borderHistory = BorderHistory(notification)
 
 # notify('Starting rank monitor')
 currentRank, border = getRank()
 
-borderHistory = BorderHistory()
-
 i = 1
 print ("Started")
 
+
+def summary(notification):
+	st = "Rank, Delegate, Weight\n"
+	nrank, nborder = getRank()
+	for x in nrank:
+		if x in trackedDelegates:
+			st += ("%d %s %d\n" % (nrank[x]['rank'], x, int(int(nrank[x]['voteWeight']) / 100000000)))
+	notification.append(st)
 	
 while True:
 	try:
@@ -149,10 +152,10 @@ while True:
 	print('.')
 
 	if nborder != None and border != None and nborder > border:
-		appendNotify(('The 101 border has increased to %d LSK (+%d)' % (nborder, nborder - border)))
+		notification.append(('The 101 border has increased to %d LSK (+%d)' % (nborder, nborder - border)))
 		border = nborder
 	elif nborder != None and border != None and nborder < border:
-		appendNotify(('The 101 border has decreased to %d LSK (%d)' % (nborder, nborder - border)))
+		notification.append(('The 101 border has decreased to %d LSK (%d)' % (nborder, nborder - border)))
 		border = nborder
 
 	if border:
@@ -172,12 +175,12 @@ while True:
 			st = checkChange(x, od, d, key)
 
 			if st != None:
-				appendNotify(st)
+				notification.append(st)
 
 	currentRank = nrank
 	i += 1
 	sys.stdout.flush()
-	flushNotify()
+	notification.flush()
 	time.sleep(120)
 	
 	
