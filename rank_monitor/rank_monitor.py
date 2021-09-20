@@ -6,11 +6,17 @@ import sys
 from datetime import datetime, timedelta
 import dateutil.parser
 
-f = open('config.json', 'r')
+DEBUG = True
+
+cfile = 'config.json'
+if len(sys.argv) == 2:
+	cfile = sys.argv[1]
+
+f = open(cfile, 'r')
 conf = json.loads(f.read())
 
-apiToken=conf['telegramApi']
-chat_id=conf['chatId']
+apiToken = conf['telegramApi']
+chat_id = conf['chatId']
 trackedDelegates = conf['delegates']
 
 
@@ -24,20 +30,22 @@ trackedChanges = ['isBanned', 'rank', 'consecutiveMissedBlocks', 'voteWeight']
 
 def getRank():
 	border = None
-	data = requests.get(API + (EP % (0, 100))).json()['data'] + requests.get(API + (EP % (100, 100))).json()['data']
+	data = requests.get(
+		API + (EP % (0, 100))).json()['data'] + requests.get(API + (EP % (100, 100))).json()['data']
 	nrank = {}
 
 	try:
-		border = int(data[100]['dpos']['delegate']['voteWeight'])  / 100000000.
+		border = int(data[100]['dpos']['delegate']['voteWeight']) / 100000000.
 	except:
 		pass
-	
+
 	for x in data:
 		dd = x['dpos']['delegate']
 		nrank[dd['username']] = dd
-		
+
 	return nrank, border
-	
+
+
 def checkChange(user, dataold, datanew, key):
 	vold = dataold[key]
 	vnew = datanew[key]
@@ -59,7 +67,8 @@ def checkChange(user, dataold, datanew, key):
 			else:
 				st = "🟢 "
 
-		st += ('%s => Changed %s to %d (was %d, diff %+d)' % (user, key, vnew, vold, vnew-vold))
+		st += ('%s => Changed %s to %d (was %d, diff %+d)' %
+			   (user, key, vnew, vold, vnew-vold))
 		return st
 
 	return None
@@ -69,8 +78,13 @@ class Notification:
 	notifies = []
 
 	def send(self, st):
-		print (st.encode('utf-8'))
-		d = requests.get ('https://api.telegram.org/bot%s/sendMessage?text=%s&chat_id=%s' % (apiToken, st, chat_id)).json()
+		print(st.encode('utf-8'))
+
+		if DEBUG:
+			return
+
+		d = requests.get('https://api.telegram.org/bot%s/sendMessage?text=%s&chat_id=%s' %
+						 (apiToken, st, chat_id)).json()
 		#print (d.encode('utf-8'))
 
 	def append(self, s):
@@ -78,8 +92,7 @@ class Notification:
 
 	def flush(self):
 		if len(self.notifies) > 0:
-			self.notifies.append('\n')
-			self.notifies.append(datetime.now().isoformat())
+			self.notifies.append('\n' + datetime.now().isoformat())
 			st = '\n'.join(self.notifies)
 			self.send(st)
 			self.notifies = []
@@ -97,7 +110,9 @@ class BorderHistory:
 			with open('border.json', 'r') as f:
 				self.borderHistory = json.loads(f.read())
 				if len(self.borderHistory) > 0:
-					self.lastborderHistoryDate = dateutil.parser.isoparse(self.borderHistory[0]['d'])
+					self.lastborderHistoryDate = dateutil.parser.isoparse(
+						self.borderHistory[-1]['d'])
+
 		except Exception as e:
 			self.update()
 
@@ -117,8 +132,8 @@ class BorderHistory:
 			sc = 'Border history:\n'
 			for x in self.borderHistory:
 				sc += ("%s => %s\n" % (x['d'], x['v']))
-			self.notification.append (sc)
-		
+			self.notification.append(sc)
+
 
 notification = Notification()
 borderHistory = BorderHistory(notification)
@@ -127,7 +142,7 @@ borderHistory = BorderHistory(notification)
 currentRank, border = getRank()
 
 i = 1
-print ("Started")
+print("Started")
 
 
 def summary(notification):
@@ -135,14 +150,16 @@ def summary(notification):
 	nrank, nborder = getRank()
 	for x in nrank:
 		if x in trackedDelegates:
-			st += ("%d %s %d\n" % (nrank[x]['rank'], x, int(int(nrank[x]['voteWeight']) / 100000000)))
+			st += ("%d %s %d\n" % (nrank[x]['rank'], x,
+				   int(int(nrank[x]['voteWeight']) / 100000000)))
 	notification.append(st)
-	
+
+
 while True:
 	try:
 		nrank, nborder = getRank()
 	except:
-		print ("Failed to update")
+		print("Failed to update")
 		continue
 
 	if i % 120 == 0:
@@ -152,14 +169,16 @@ while True:
 	print('.')
 
 	if nborder != None and border != None and nborder > border:
-		notification.append(('The 101 border has increased to %d LSK (+%d)' % (nborder, nborder - border)))
+		notification.append(
+			('The 101 border has increased to %d LSK (+%d)' % (nborder, nborder - border)))
 		border = nborder
 	elif nborder != None and border != None and nborder < border:
-		notification.append(('The 101 border has decreased to %d LSK (%d)' % (nborder, nborder - border)))
+		notification.append(
+			('The 101 border has decreased to %d LSK (%d)' % (nborder, nborder - border)))
 		border = nborder
 
 	if border:
-		print ('Updated %d' % (border))
+		print('Updated %d' % (border))
 
 	for x in nrank:
 		if not (x in nrank) or not (x in currentRank):
@@ -182,5 +201,3 @@ while True:
 	sys.stdout.flush()
 	notification.flush()
 	time.sleep(120)
-	
-	
