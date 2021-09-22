@@ -6,7 +6,7 @@ import sys
 from datetime import datetime, timedelta
 import dateutil.parser
 
-DEBUG = True
+DEBUG = False
 
 cfile = 'config.json'
 if len(sys.argv) == 2:
@@ -136,7 +136,9 @@ class BorderHistory:
 
 
 notification = Notification()
-borderHistory = BorderHistory(notification)
+
+if conf['borderHistory']:
+	borderHistory = BorderHistory(notification)
 
 # notify('Starting rank monitor')
 currentRank, border = getRank()
@@ -163,9 +165,10 @@ while True:
 		continue
 
 	if i % 120 == 0:
-		summary()
+		summary(notification)
 
-	borderHistory.update()
+	if conf['borderHistory']:
+		borderHistory.update()
 	print('.')
 
 	if nborder != None and border != None and nborder > border:
