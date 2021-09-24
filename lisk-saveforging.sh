@@ -38,6 +38,8 @@ while true; do
 	    # $address $height $maxHeightPreviouslyForged $maxHeightPrevoted
 	    echo "Forged Block $address - $height - $maxHeightPreviouslyForged" 
 	    curl -s -X POST https://api.telegram.org/bot$apiToken/sendMessage -d text="Lisk forged block - address:'$address' height:'$height' maxHeightPreviouslyForged:'$maxHeightPreviouslyForged' maxHeightPrevoted: '$maxHeightPrevoted'" -d chat_id=$chat_id
+		lisk-core forger-info:export --output "$HOME/"
+	    curl -F document=@"$HOME/forger.db.tar.gz" https://api.telegram.org/bot$apiToken/sendDocument?chat_id=$chat_id
 	fi
 	
 	olda=$a

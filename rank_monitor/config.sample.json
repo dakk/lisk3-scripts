@@ -1,5 +1,6 @@
 {
     "telegramApi": "",
     "chatId": "",
+    "borderHistory": false,
     "delegates": []
 }
