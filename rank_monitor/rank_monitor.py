@@ -2,9 +2,12 @@
 import requests
 import time
 import json
+import os
 import sys
 from datetime import datetime, timedelta
 import dateutil.parser
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 
 DEBUG = False
 
@@ -30,12 +33,15 @@ trackedChanges = ['isBanned', 'rank', 'consecutiveMissedBlocks', 'voteWeight']
 
 def getRank():
 	border = None
+	borderStep = None
 	data = requests.get(
 		API + (EP % (0, 100))).json()['data'] + requests.get(API + (EP % (100, 100))).json()['data']
 	nrank = {}
 
 	try:
 		border = int(data[100]['dpos']['delegate']['voteWeight']) / 100000000.
+		w102 = int(data[101]['dpos']['delegate']['voteWeight']) / 100000000.
+		borderStep = border - w102
 	except:
 		pass
 
@@ -43,7 +49,7 @@ def getRank():
 		dd = x['dpos']['delegate']
 		nrank[dd['username']] = dd
 
-	return nrank, border
+	return nrank, border, borderStep
 
 
 def checkChange(user, dataold, datanew, key):
@@ -87,6 +93,10 @@ class Notification:
 						 (apiToken, st, chat_id)).json()
 		#print (d.encode('utf-8'))
 
+	def sendPhoto(self, file):
+		os.system('curl -F photo=@"./%s" https://api.telegram.org/bot%s/sendPhoto?chat_id=%s' %
+				  (file, apiToken, chat_id))
+
 	def append(self, s):
 		self.notifies.append(s)
 
@@ -115,24 +125,49 @@ class BorderHistory:
 
 		except Exception as e:
 			self.update()
+		
+		self.savePlot()
 
 	def update(self):
 		if self.lastborderHistoryDate == None or (datetime.now() > (self.lastborderHistoryDate + timedelta(hours=24))):
-			nrank, nborder = getRank()
+			nrank, nborder, borderStep = getRank()
 			self.lastborderHistoryDate = datetime.now()
 
 			self.borderHistory.append({
 				'd': self.lastborderHistoryDate.isoformat(),
-				'v': nborder
+				'v': nborder,
+				's': borderStep
 			})
 
 			with open('border.json', 'w') as f:
 				f.write(json.dumps(self.borderHistory))
 
-			sc = 'Border history:\n'
-			for x in self.borderHistory:
-				sc += ("%s => %s\n" % (x['d'], x['v']))
-			self.notification.append(sc)
+			# sc = 'Border history:\n'
+			# for x in self.borderHistory:
+			# 	sc += ("%s => %s\n" % (x['d'], x['v']))
+			# self.notification.append(sc)
+
+			self.savePlot()
+			self.notification.sendPhoto('border_history.png')
+			
+
+
+	def savePlot(self):
+		plt.clf()
+		fig, ax1 = plt.subplots()
+
+		ax2 = ax1.twinx()
+		ax1.title.set_text('Border History')
+		ax1.plot(list(map(lambda l: dateutil.parser.isoparse(l['d']), self.borderHistory)), list(map(lambda l: l['v'], self.borderHistory)), 'g-')
+		ax2.plot(list(map(lambda l: dateutil.parser.isoparse(l['d']), self.borderHistory)), list(map(lambda l: l['s'] if 's' in l else 0, self.borderHistory)), 'b-')
+		plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m/%Y'))
+		plt.gca().xaxis.set_major_locator(mdates.MonthLocator())
+		ax1.set_xlabel('Date')
+		ax1.set_ylabel('Border (LSK)', color='g')
+		ax2.set_ylabel('102/101 diff (LSK)', color='b')
+
+		plt.savefig('border_history.png', bbox_inches="tight")
+
 
 
 notification = Notification()
@@ -140,28 +175,36 @@ notification = Notification()
 if conf['borderHistory']:
 	borderHistory = BorderHistory(notification)
 
-# notify('Starting rank monitor')
-currentRank, border = getRank()
-
-i = 1
-print("Started")
 
 
 def summary(notification):
+	nrank, nborder, borderStep = getRank()
+
 	st = "Rank, Delegate, Weight\n"
-	nrank, nborder = getRank()
 	for x in nrank:
 		if x in trackedDelegates:
 			st += ("%d %s %d\n" % (nrank[x]['rank'], x,
 				   int(int(nrank[x]['voteWeight']) / 100000000)))
+
+	if nborder != None and borderStep != None:
+		st += '\nBorder is: %d LSK\n' % nborder
+		st += 'Diff between 102 and 101 is: %d LSK' % borderStep
+
 	notification.append(st)
 
 
+# notify('Starting rank monitor')
+currentRank, border, borderStep = getRank()
+
+i = 1
+print("Started")
+
 while True:
 	try:
-		nrank, nborder = getRank()
-	except:
+		nrank, nborder, borderStep = getRank()
+	except Exception as e:
 		print("Failed to update")
+		time.sleep(1)
 		continue
 
 	if i % 120 == 0:
