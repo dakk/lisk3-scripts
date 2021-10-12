@@ -201,7 +201,7 @@ print("Started")
 
 while True:
 	try:
-		nrank, nborder, borderStep = getRank()
+		nrank, nborder, nborderStep = getRank()
 	except Exception as e:
 		print("Failed to update")
 		time.sleep(1)
@@ -222,6 +222,15 @@ while True:
 		notification.append(
 			('The 101 border has decreased to %d LSK (%d)' % (nborder, nborder - border)))
 		border = nborder
+
+	if nborderStep != None and borderStep != None and nborderStep > borderStep:
+		notification.append(
+			('The 101/102 diff has increased to %d LSK (+%d)' % (nborderStep, nborderStep - borderStep)))
+		borderStep = nborderStep
+	elif nborderStep != None and borderStep != None and nborderStep < borderStep:
+		notification.append(
+			('The 101/102 diff has decreased to %d LSK (%d)' % (nborderStep, nborderStep - borderStep)))
+		borderStep = nborderStep
 
 	if border:
 		print('Updated %d' % (border))
