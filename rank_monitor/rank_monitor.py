@@ -31,6 +31,9 @@ trackedChanges = ['isBanned', 'rank', 'consecutiveMissedBlocks', 'voteWeight']
 # trackedDelegates = None
 
 
+def getCurrentBlock():
+	return requests.get(API + 'blocks').json()['data'][0]['height']
+
 def getRank():
 	border = None
 	borderStep = None
@@ -250,6 +253,12 @@ while True:
 
 			if st != None:
 				notification.append(st)
+
+	cblock = getCurrentBlock()
+	for x in conf['nextHardFork']:
+		if cblock < x and i % 10 == 0:
+			notification.append(
+				('The next hard fork will occur in %d blocks' % (x - cblock)))
 
 	currentRank = nrank
 	i += 1
