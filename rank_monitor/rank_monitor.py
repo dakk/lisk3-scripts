@@ -23,8 +23,9 @@ chat_id = conf['chatId']
 trackedDelegates = conf['delegates']
 
 
+# API = "https://mainnet-service.lisktools.eu/api/v2/"
 API = "https://service.lisk.io/api/v2/"
-EP = "accounts?isDelegate=true&offset=%d&limit=%d"
+EP = "accounts?isDelegate=true&offset=%d&limit=%d&sort=rank:asc"
 
 currentRank = {}
 trackedChanges = ['isBanned', 'rank', 'consecutiveMissedBlocks', 'voteWeight']
@@ -48,9 +49,15 @@ def getRank():
 	except:
 		pass
 
-	for x in data:
-		dd = x['dpos']['delegate']
+	data = list(map(lambda x: x['dpos']['delegate'], data))
+	data = list(filter(lambda x: x['status'] != 'punished', data))
+	data.sort(key=lambda x: int(x['voteWeight']), reverse=True)
+
+	i = 1
+	for dd in data:
+		dd['rank'] = i
 		nrank[dd['username']] = dd
+		i += 1
 
 	return nrank, border, borderStep
 
@@ -107,7 +114,10 @@ class Notification:
 		if len(self.notifies) > 0:
 			self.notifies.append('\n' + datetime.now().isoformat())
 			st = '\n'.join(self.notifies)
-			self.send(st)
+			if DEBUG:
+				print(st)
+			else:
+				self.send(st)
 			self.notifies = []
 
 
@@ -256,7 +266,7 @@ while True:
 
 	cblock = getCurrentBlock()
 	for x in conf['nextHardFork']:
-		if cblock < x and i % 10 == 0:
+		if cblock < x and (i % 10 == 0 or (x - cblock) < 100):
 			notification.append(
 				('The next hard fork will occur in %d blocks' % (x - cblock)))
 
