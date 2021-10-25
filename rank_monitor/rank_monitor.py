@@ -42,16 +42,16 @@ def getRank():
 		API + (EP % (0, 100))).json()['data'] + requests.get(API + (EP % (100, 100))).json()['data']
 	nrank = {}
 
+	data = list(map(lambda x: x['dpos']['delegate'], data))
+	data = list(filter(lambda x: x['status'] != 'punished', data))
+	data.sort(key=lambda x: int(x['voteWeight']), reverse=True)
+
 	try:
 		border = int(data[100]['dpos']['delegate']['voteWeight']) / 100000000.
 		w102 = int(data[101]['dpos']['delegate']['voteWeight']) / 100000000.
 		borderStep = border - w102
 	except:
 		pass
-
-	data = list(map(lambda x: x['dpos']['delegate'], data))
-	data = list(filter(lambda x: x['status'] != 'punished', data))
-	data.sort(key=lambda x: int(x['voteWeight']), reverse=True)
 
 	i = 1
 	for dd in data:
