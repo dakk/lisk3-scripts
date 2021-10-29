@@ -46,12 +46,9 @@ def getRank():
 	data = list(filter(lambda x: x['status'] != 'punished', data))
 	data.sort(key=lambda x: int(x['voteWeight']), reverse=True)
 
-	try:
-		border = int(data[100]['dpos']['delegate']['voteWeight']) / 100000000.
-		w102 = int(data[101]['dpos']['delegate']['voteWeight']) / 100000000.
-		borderStep = border - w102
-	except:
-		pass
+	border = int(data[100]['voteWeight']) / 100000000.
+	w102 = int(data[101]['voteWeight']) / 100000000.
+	borderStep = border - w102
 
 	i = 1
 	for dd in data:
